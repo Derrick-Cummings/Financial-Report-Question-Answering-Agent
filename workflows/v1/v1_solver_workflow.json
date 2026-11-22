@@ -1,0 +1,225 @@
+{
+  "name": "v1_finqa_solver",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "v1-finqa-solver",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "281a8990-8397-4256-80f8-eef11277c577",
+      "name": "FinQA Task Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        112
+      ],
+      "webhookId": "46c7dd87-4b76-4a3b-b54d-8cc8b5e895d8"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a1",
+              "name": "task_id",
+              "type": "string",
+              "value": "={{ $json.body.task_id }}"
+            },
+            {
+              "id": "a2",
+              "name": "permitted_evidence",
+              "type": "string",
+              "value": "=TASK_ID: {{ $json.body.task_id }}\n\nQUESTION:\n{{ $json.body.question }}\n\nPRE_TEXT:\n{{ Array.isArray($json.body.pre_text) ? $json.body.pre_text.join(\"\\n\") : ($json.body.pre_text || \"\") }}\n\nTABLE (JSON rows):\n{{ typeof $json.body.table === \"string\" ? $json.body.table : JSON.stringify($json.body.table || []) }}\n\nPOST_TEXT:\n{{ Array.isArray($json.body.post_text) ? $json.body.post_text.join(\"\\n\") : ($json.body.post_text || \"\") }}"
+            },
+            {
+              "id": "293b500f-8e2f-4b02-82cf-800fabcc879f",
+              "name": "solver_input",
+              "value": "=Task ID: {{$json.body.task_id}}\nQuestion: {{$json.body.question}}\n\nPermitted pre-text:\n{{$json.body.pre_text.join('\\n')}}\n\nPermitted post-text:\n{{$json.body.post_text.join('\\n')}}\n\nPermitted table:\n{{JSON.stringify($json.body.table)}}\n",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "6b07ce8b-2c06-48bb-b73b-9f980d4b6925",
+      "name": "Build Permitted Evidence",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.5,
+      "position": [
+        224,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.permitted_evidence }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are the FinQA Solver.\n\n1. Use only the supplied FinQA question and permitted evidence. Do not use outside knowledge, reference answers, or assumptions.\n\n2. Identify the required values in the evidence. Create one executable arithmetic expression using numbers, parentheses, +, -, *, and /. Call the Calculator tool with that expression before giving the final answer.\n\n3. Return only valid JSON with these fields:\ntask_id\narithmetic_expression\ncalculator_result\nfinal_answer\nevidence_used\ntrace\n\n4. The trace must be brief and inspectable. State the evidence values used, the expression submitted to the Calculator, and the calculator result. Do not provide hidden chain-of-thought.\n",
+          "maxIterations": 6
+        }
+      },
+      "id": "691ca232-08d6-4395-9b30-c2972d4b85b2",
+      "name": "Solver Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        512,
+        112
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-5-5",
+          "cachedResultName": "Claude Sonnet 5.5"
+        },
+        "options": {
+          "thinkingMode": "adaptive"
+        }
+      },
+      "id": "127707dd-7f30-4942-9732-a4ce7c0c6e9d",
+      "name": "Anthropic Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.6,
+      "position": [
+        448,
+        336
+      ],
+      "credentials": {
+        "anthropicApi": {
+          "id": "Dk5fl1GKIbygEH58",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "id": "daf32b8b-757e-4a7d-87fa-ed256de59d09",
+      "name": "calculator",
+      "type": "@n8n/n8n-nodes-langchain.toolCalculator",
+      "typeVersion": 1,
+      "position": [
+        576,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"task_id\": \"finqa_661e2f606542f7dec0b41781\",\n  \"arithmetic_expression\": \"(3859 - 4822) / 4822 * 100\",\n  \"calculator_result\": -19.970966404,\n  \"final_answer\": \"The number of nonvested RSUs decreased by approximately 19.97% in 2013.\",\n  \"evidence_used\": \"The supplied table reports 4,822 nonvested RSUs at December 31, 2012 and 3,859 nonvested RSUs at December 31, 2013.\",\n  \"trace\": \"Used the supplied 2012 and 2013 nonvested-RSU values, submitted the arithmetic expression to the Calculator, and used the Calculator result for the final answer.\"\n}"
+      },
+      "id": "d3d072ce-0268-478a-9b5b-9f94e918d196",
+      "name": "Structured Result Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        704,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json.output}}",
+        "options": {}
+      },
+      "id": "0f94ee40-4d42-461e-899c-0fe2b51a027a",
+      "name": "Respond with Result",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        912,
+        112
+      ],
+      "alwaysOutputData": false
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "FinQA Task Webhook": {
+      "main": [
+        [
+          {
+            "node": "Build Permitted Evidence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Permitted Evidence": {
+      "main": [
+        [
+          {
+            "node": "Solver Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Solver Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond with Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Solver Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "calculator": {
+      "ai_tool": [
+        [
+          {
+            "node": "Solver Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Result Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Solver Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "473626d7-62ff-48e8-ad2f-1ad1378f358e",
+  "meta": {
+    "instanceId": "5d60b156f896274b68e50267c16e5a8075cdde1146ba5a8d6e5afdfc488d65a8"
+  },
+  "nodeGroups": [],
+  "id": "BEgGqPJrFHfkzMcj",
+  "tags": []
+}
