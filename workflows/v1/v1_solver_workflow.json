@@ -29,12 +29,6 @@
               "value": "={{ $json.body.task_id }}"
             },
             {
-              "id": "a2",
-              "name": "permitted_evidence",
-              "type": "string",
-              "value": "=TASK_ID: {{ $json.body.task_id }}\n\nQUESTION:\n{{ $json.body.question }}\n\nPRE_TEXT:\n{{ Array.isArray($json.body.pre_text) ? $json.body.pre_text.join(\"\\n\") : ($json.body.pre_text || \"\") }}\n\nTABLE (JSON rows):\n{{ typeof $json.body.table === \"string\" ? $json.body.table : JSON.stringify($json.body.table || []) }}\n\nPOST_TEXT:\n{{ Array.isArray($json.body.post_text) ? $json.body.post_text.join(\"\\n\") : ($json.body.post_text || \"\") }}"
-            },
-            {
               "id": "293b500f-8e2f-4b02-82cf-800fabcc879f",
               "name": "solver_input",
               "value": "=Task ID: {{$json.body.task_id}}\nQuestion: {{$json.body.question}}\n\nPermitted pre-text:\n{{$json.body.pre_text.join('\\n')}}\n\nPermitted post-text:\n{{$json.body.post_text.join('\\n')}}\n\nPermitted table:\n{{JSON.stringify($json.body.table)}}\n",
@@ -57,7 +51,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $json.permitted_evidence }}",
+        "text": "={{ $json.solver_input }}",
         "hasOutputParser": true,
         "options": {
           "systemMessage": "You are the FinQA Solver.\n\n1. Use only the supplied FinQA question and permitted evidence. Do not use outside knowledge, reference answers, or assumptions.\n\n2. Identify the required values in the evidence. Create one executable arithmetic expression using numbers, parentheses, +, -, *, and /. Call the Calculator tool with that expression before giving the final answer.\n\n3. Return only valid JSON with these fields:\ntask_id\narithmetic_expression\ncalculator_result\nfinal_answer\nevidence_used\ntrace\n\n4. The trace must be brief and inspectable. State the evidence values used, the expression submitted to the Calculator, and the calculator result. Do not provide hidden chain-of-thought.\n",
@@ -77,9 +71,9 @@
       "parameters": {
         "model": {
           "__rl": true,
+          "value": "claude-opus-5-5",
           "mode": "list",
-          "value": "claude-sonnet-5-5",
-          "cachedResultName": "Claude Sonnet 5.5"
+          "cachedResultName": "Claude Opus 5.5"
         },
         "options": {
           "thinkingMode": "adaptive"
@@ -215,7 +209,7 @@
     "executionOrder": "v1",
     "binaryMode": "separate"
   },
-  "versionId": "473626d7-62ff-48e8-ad2f-1ad1378f358e",
+  "versionId": "265adb48-39c8-4a53-b5e4-12592fb650eb",
   "meta": {
     "instanceId": "5d60b156f896274b68e50267c16e5a8075cdde1146ba5a8d6e5afdfc488d65a8"
   },
