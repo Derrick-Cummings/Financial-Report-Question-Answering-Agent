@@ -14,13 +14,13 @@
 - Webhook input fields: task_id, question, pre_text, post_text, and table.
 - Webhook response mode: Using Respond to Webhook Node.
 
-### Permitted evidence
+### 2. Permitted evidence
 - Node: Build Permitted Evidence.
 - Output field: solver_input.
 - Mapping: Combines task_id, question, pre_text, post_text, and table from the incoming Webhook body.
 - Evidence rule: The Solver uses only the supplied task question and permitted report evidence.
 
-### Solver Agent
+### 3. Solver Agent
 - Node: Solver Agent.
 - Role: Creates an executable arithmetic expression from permitted evidence, calls the Calculator tool, and returns a structured answer.
 - Prompt location: prompts/v1/solver_prompt.md.
@@ -44,7 +44,7 @@
 - Node: Structured Result Parser.
 - Required fields: task_id, arithmetic_expression, calculator_result, final_answer, evidence_used, and trace.
 
-### Response
+### 4. Response
 - Node: Respond with Result.
 - Response type: JSON.
 - Response expression: {{ $json.output }}
